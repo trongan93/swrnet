@@ -7,11 +7,13 @@ from ml4floods.models.config_setup import  AttrDict
 from pytorch_lightning.utilities.cloud_io import load
 
 from ml4floods.models.utils import losses, metrics
-from ml4floods.models.architectures.baselines import SimpleLinear, SimpleCNN
+# from ml4floods.models.architectures.baselines import SimpleLinear, SimpleCNN
+from ml4floods.models.architectures.baselines import SimpleLinear
 from ml4floods.models.architectures.unets import UNet, UNet_dropout
 from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
+from models.architecture import SimpleCNN
 class WorldFloodsModel(pl.LightningModule):
     """
     Model to do multiclass classification.
