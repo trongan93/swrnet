@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch import Tensor
-from .._internally_replaced_utils import load_state_dict_from_url
+# from .._internally_replaced_utils import load_state_dict_from_url
 from typing import Callable, Any, Optional, List
 
 
@@ -210,9 +210,9 @@ def mobilenet_v2(pretrained: bool = False, progress: bool = True, **kwargs: Any)
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     model = MobileNetV2(**kwargs)
-    if pretrained:
-        state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'],
-                                              progress=progress)
-        model.load_state_dict(state_dict)
+#     if pretrained:
+#         state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'],
+#                                               progress=progress)
+#         model.load_state_dict(state_dict)
     return model
-{"mode":"full","isActive":false}
+# {"mode":"full","isActive":false}
