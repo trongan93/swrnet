@@ -1,4 +1,6 @@
 import torch
+import itertools
+import numpy as np
 from ml4floods.data.worldfloods.configs import CHANNELS_CONFIGURATIONS, SENTINEL2_NORMALIZATION
 from typing import (Callable, Dict, Iterable, List, NamedTuple, Optional,Tuple, Union)
 
@@ -144,3 +146,58 @@ def padded_predict(predfunction: Callable, module_shape: int) -> Callable:
         return pred_padded[slice_]
 
     return predict
+
+def predbytiles(pred_function: Callable, input_batch: torch.Tensor,
+                tile_size=1280, pad_size=32, device=torch.device("cpu")) -> torch.Tensor:
+    """
+    Apply a pred_function (usually a torch model) by tiling the input_batch array.
+    The purpose is to run `pred_function(input_batch)` avoiding memory errors.
+    It tiles and stiches the pateches with padding using the strategy of: https://arxiv.org/abs/1805.12219
+    Args:
+        pred_function: pred_function to call
+        input_batch: torch.Tensor in BCHW format
+        tile_size: Size of the tiles.
+        pad_size: each tile is padded before calling the pred_function.
+        device: Device to save the predictions
+    Returns:
+        torch.Tensor in BCHW format (same B, H and W as input_batch)
+    """
+    pred_continuous_tf = None
+    assert input_batch.dim() == 4, "Expected batch of images"
+
+    for b, i, j in itertools.product(range(0, input_batch.shape[0]),
+                                     range(0, input_batch.shape[2], tile_size),
+                                     range(0, input_batch.shape[3], tile_size)):
+
+        slice_current = (slice(i, min(i + tile_size, input_batch.shape[2])),
+                         slice(j, min(j + tile_size, input_batch.shape[3])))
+        slice_pad = (slice(max(i - pad_size, 0), min(i + tile_size + pad_size, input_batch.shape[2])),
+                     slice(max(j - pad_size, 0), min(j + tile_size + pad_size, input_batch.shape[3])))
+
+        slice_save_i = slice(slice_current[0].start - slice_pad[0].start,
+                             None if (slice_current[0].stop - slice_pad[0].stop) == 0 else slice_current[0].stop -
+                                                                                           slice_pad[0].stop)
+        slice_save_j = slice(slice_current[1].start - slice_pad[1].start,
+                             None if (slice_current[1].stop - slice_pad[1].stop) == 0 else slice_current[1].stop -
+                                                                                           slice_pad[1].stop)
+
+        slice_save = (slice_save_i, slice_save_j)
+
+        slice_prepend = (slice(b, b + 1), slice(None))
+        slice_current = slice_prepend + slice_current
+        slice_pad = slice_prepend + slice_pad
+        slice_save = slice_prepend + slice_save
+
+        vals_to_predict = input_batch[slice_pad]
+        cnn_out = pred_function(vals_to_predict)
+
+        assert cnn_out.dim() == 4, "Expected 4-band prediction (after softmax)"
+
+        if pred_continuous_tf is None:
+            pred_continuous_tf = torch.zeros((input_batch.shape[0], cnn_out.shape[1],
+                                              input_batch.shape[2], input_batch.shape[3]),
+                                             device=device)
+
+        pred_continuous_tf[slice_current] = cnn_out[slice_save]
+
+    return pred_continuous_tf
