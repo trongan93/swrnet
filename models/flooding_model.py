@@ -9,11 +9,12 @@ from pytorch_lightning.utilities.cloud_io import load
 from ml4floods.models.utils import losses, metrics
 # from ml4floods.models.architectures.baselines import SimpleLinear, SimpleCNN
 from ml4floods.models.architectures.baselines import SimpleLinear
-from ml4floods.models.architectures.unets import UNet, UNet_dropout
+# from ml4floods.models.architectures.unets import UNet, UNet_dropout
 from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
 from models.architecture import SimpleCNN
+from models.unet_optimize import UNet, UNet_dropout
 class WorldFloodsModel(pl.LightningModule):
     """
     Model to do multiclass classification.
@@ -137,7 +138,24 @@ class WorldFloodsModel(pl.LightningModule):
             3: "cloud"
         }
 
+class DistilledTrainingModel(WorldFloodsModel):
+    def __init__(self, student_model_name, teacher_model_name, hparams):
+        super(DistilledTrainingModel, self).__init__(model_name=student_model_name, hparams=hparams)
+        self._mse_loss = nn.MSELoss()
+        self._teacher_model = self.create_model(self._hparams.teacher_model, pre_trained=True)
+        self._teacher_model.load()
+        for param in self._teacher_model.parameters():
+            param.requires_grad = False
 
+    def training_step(self, batch, batch_idx):
+        images, labels = batch
+        y_hat_student = self.forward(images)
+        y_hat_teacher = self._teacher_model.forward(images)
+        loss = self._mse_loss(y_hat_student, y_hat_teacher)
+        return {'loss': loss,
+                'log': {'train_loss': loss}}
+    
+    
 def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
     architecture = h_params.get('model_type', 'linear')
     num_channels = h_params.get('num_channels', 3)

@@ -6,16 +6,15 @@ from ml4floods.preprocess.worldfloods import normalize
 from ml4floods.models.config_setup import  AttrDict
 from pytorch_lightning.utilities.cloud_io import load
 
-from ml4floods.models.utils import metrics
+from ml4floods.models.utils import losses, metrics
 # from ml4floods.models.architectures.baselines import SimpleLinear, SimpleCNN
 from ml4floods.models.architectures.baselines import SimpleLinear
-from ml4floods.models.architectures.unets import UNet, UNet_dropout
+# from ml4floods.models.architectures.unets import UNet, UNet_dropout
 from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
 from models.architecture import SimpleCNN
-from models.mobilenetv2 import MobileNetV2
-from models import losses
+from models.unet_optimize import UNet, UNet_dropout
 class WorldFloodsModel(pl.LightningModule):
     """
     Model to do multiclass classification.
@@ -65,7 +64,6 @@ class WorldFloodsModel(pl.LightningModule):
         Returns:
             (B, 3, H, W) prediction of the network
         """
-        x = batch_reduce_rgb(x)
         return self.network(x)
 
     def log_images(self, x, y, logits,prefix=""):
@@ -90,7 +88,6 @@ class WorldFloodsModel(pl.LightningModule):
                 y (torch.Tensor): (B, W, H) encoded as {0: invalid, 1: land, 2: water, 3: cloud}
         """
         x, y = batch['image'], batch['mask'].squeeze(1)
-        x = batch_reduce_rgb(x)
         logits = self.network(x)
         
         bce_loss = losses.cross_entropy_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device))
@@ -141,7 +138,24 @@ class WorldFloodsModel(pl.LightningModule):
             3: "cloud"
         }
 
+class DistilledTrainingModel(WorldFloodsModel):
+    def __init__(self, student_model_name, teacher_model_name, hparams):
+        super(DistilledTrainingModel, self).__init__(model_name=student_model_name, hparams=hparams)
+        self._mse_loss = nn.MSELoss()
+        self._teacher_model = self.create_model(self._hparams.teacher_model, pre_trained=True)
+        self._teacher_model.load()
+        for param in self._teacher_model.parameters():
+            param.requires_grad = False
 
+    def training_step(self, batch, batch_idx):
+        images, labels = batch
+        y_hat_student = self.forward(images)
+        y_hat_teacher = self._teacher_model.forward(images)
+        loss = self._mse_loss(y_hat_student, y_hat_teacher)
+        return {'loss': loss,
+                'log': {'train_loss': loss}}
+    
+    
 def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
     architecture = h_params.get('model_type', 'linear')
     num_channels = h_params.get('num_channels', 3)
@@ -151,8 +165,7 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
         model = UNet(num_channels, num_classes)
 
     elif architecture == 'simplecnn':
-#         model = SimpleCNN(num_channels, num_classes)
-        model = MobileNetV2(num_channels, num_classes)
+        model = SimpleCNN(num_channels, num_classes)
 
     elif architecture == 'linear':
         model = SimpleLinear(num_channels, num_classes)
@@ -190,15 +203,6 @@ def mask_to_rgb(mask, values=[0, 1, 2, 3], colors_cmap=COLORS_WORLDFLOODS):
         mask_return[mask == values[i], :] = c
     return mask_return
 
-def batch_reduce_rgb(x:torch.Tensor, channel_configuration:str="all"):
-    # Find the RGB indexes within the S2 bands
-    bands_read_names = [BANDS_S2[i] for i in CHANNELS_CONFIGURATIONS[channel_configuration]]
-    bands_index_rgb = [bands_read_names.index(b) for b in ["B4", "B3", "B2"]]
-#     print(bands_index_rgb)
-    y = x[:, bands_index_rgb]
-    return y
-    
-    
 
 def batch_to_unnorm_rgb(x:torch.Tensor, channel_configuration:str="all", max_clip_val=3000.) -> np.ndarray:
     """
