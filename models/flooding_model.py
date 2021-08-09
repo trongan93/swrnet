@@ -15,6 +15,8 @@ from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONF
 
 from models.architecture import SimpleCNN
 from models.unet_optimize import UNet, UNet_dropout
+from torch import nn
+
 class WorldFloodsModel(pl.LightningModule):
     """
     Model to do multiclass classification.
@@ -139,21 +141,30 @@ class WorldFloodsModel(pl.LightningModule):
         }
 
 class DistilledTrainingModel(WorldFloodsModel):
-    def __init__(self, student_model_name, teacher_model_name, hparams):
-        super(DistilledTrainingModel, self).__init__(model_name=student_model_name, hparams=hparams)
+    def __init__(self, teacher_model_params: dict, student_model_params: dict):
+#         super(DistilledTrainingModel, self).__init__(model_params=teacher_model_params)
+        super().__init__(model_params=teacher_model_params)
+        self.save_hyperparameters()
+                
+        teacher_params_dict = teacher_model_params.get('hyperparameters', {})
+        self.num_class = teacher_params_dict.get('num_classes', 3)
+        self._teacher_network = configure_architecture(teacher_params_dict)
+        
+        student_params_dict = student_model_params.get('hyperparameters', {})
+        self._student_network = configure_architecture(student_params_dict)
+  
+        #label names setup
+        self.label_names = student_model_params.get('label_names', [i for i in range(self.num_class)])
         self._mse_loss = nn.MSELoss()
-        self._teacher_model = self.create_model(self._hparams.teacher_model, pre_trained=True)
-        self._teacher_model.load()
-        for param in self._teacher_model.parameters():
-            param.requires_grad = False
 
-    def training_step(self, batch, batch_idx):
-        images, labels = batch
-        y_hat_student = self.forward(images)
-        y_hat_teacher = self._teacher_model.forward(images)
-        loss = self._mse_loss(y_hat_student, y_hat_teacher)
-        return {'loss': loss,
-                'log': {'train_loss': loss}}
+    def training_step(self, batch: Dict, batch_idx) -> float:
+        x, y = batch['image'], batch['mask'].squeeze(1)
+        y_logits_student = self._student_network(x)
+        y_logits_teacher = self._teacher_network.forward(x)
+        loss = self._mse_loss(y_logits_student, y_logits_teacher)
+        return loss
+#         return {'loss': loss,
+#                 'log': {'train_loss': loss}}
     
     
 def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
@@ -162,6 +173,9 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
     num_classes = h_params.get('num_classes', 2)
 
     if architecture == 'unet':
+        model = UNet(num_channels, num_classes)
+    
+    elif architecture == 'unet_simple':
         model = UNet(num_channels, num_classes)
 
     elif architecture == 'simplecnn':
