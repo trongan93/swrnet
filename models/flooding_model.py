@@ -14,7 +14,7 @@ from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
 from models.architecture import SimpleCNN
-from models.unet_optimize import UNet, UNet_dropout
+from models.unet_optimize import UNet, UNet_dropout, SimpleUNet
 from torch import nn
 
 class WorldFloodsModel(pl.LightningModule):
@@ -159,7 +159,7 @@ class DistilledTrainingModel(WorldFloodsModel):
 
     def training_step(self, batch: Dict, batch_idx) -> float:
         x, y = batch['image'], batch['mask'].squeeze(1)
-        y_logits_student = self._student_network(x)
+        y_logits_student = self.forward(x)
         y_logits_teacher = self._teacher_network.forward(x)
         loss = self._mse_loss(y_logits_student, y_logits_teacher)
         return loss
@@ -176,7 +176,7 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
         model = UNet(num_channels, num_classes)
     
     elif architecture == 'unet_simple':
-        model = UNet(num_channels, num_classes)
+        model = SimpleUNet(num_channels, num_classes)
 
     elif architecture == 'simplecnn':
         model = SimpleCNN(num_channels, num_classes)
