@@ -145,6 +145,7 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
     num_classes = h_params.get('num_classes', 2)
 
     if architecture == 'unet':
+        print("UNet training channels: ", num_channels, ", num_classes: ", num_classes)
         model = UNet(num_channels, num_classes)
 
     elif architecture == 'simplecnn':
