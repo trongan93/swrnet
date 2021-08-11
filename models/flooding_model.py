@@ -14,6 +14,7 @@ from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
 from models.architecture import SimpleCNN
+from models.unet_optimize import UNet, UNet_dropout, SimpleUNet
 class WorldFloodsModel(pl.LightningModule):
     """
     Model to do multiclass classification.
