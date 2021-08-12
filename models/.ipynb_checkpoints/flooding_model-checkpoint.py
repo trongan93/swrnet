@@ -142,9 +142,9 @@ class WorldFloodsModel(pl.LightningModule):
 
 class DistilledTrainingModel(WorldFloodsModel):
     def __init__(self, teacher_model_params: dict, student_model_params: dict):
-#         super(DistilledTrainingModel, self).__init__(model_params=teacher_model_params)
-        super().__init__(model_params=teacher_model_params)
-        self.save_hyperparameters()
+        super().__init__(model_params=student_model_params)
+#         super().__init__(model_params=teacher_model_params)
+#         self.save_hyperparameters()
                 
         teacher_params_dict = teacher_model_params.get('hyperparameters', {})
         self.num_class = teacher_params_dict.get('num_classes', 3)
@@ -173,6 +173,7 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
     num_classes = h_params.get('num_classes', 2)
 
     if architecture == 'unet':
+        print('num of channels: ', num_channels, ', num of classes: ', num_classes)
         model = UNet(num_channels, num_classes)
     
     elif architecture == 'unet_simple':
