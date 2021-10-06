@@ -1,0 +1,26 @@
+{
+    "os": "Linux-4.15.0-142-generic-x86_64-with-glibc2.27",
+    "python": "3.8.0",
+    "heartbeatAt": "2021-10-05T04:17:04.045307",
+    "startedAt": "2021-10-05T04:17:02.858996",
+    "docker": null,
+    "gpu": "NVIDIA Quadro RTX 4000",
+    "gpu_count": 8,
+    "cpu_count": 40,
+    "cuda": "11.0.228",
+    "args": [
+        "-f",
+        "/home/eeaiserver/.local/share/jupyter/runtime/kernel-d9d6d32e-68bd-498d-8585-50e13df45e00.json"
+    ],
+    "state": "running",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "https://github.com/trongan93/satellite-knowledge-distillation.git",
+        "commit": "0002fce445d12876f75044243a5f61f07d66f0f8"
+    },
+    "email": "trongan93@gmail.com",
+    "root": "/home/eeaiserver/viplab_projects/satellite-knowledge-distillation",
+    "host": "aiserver",
+    "username": "eeaiserver",
+    "executable": "/home/eeaiserver/pt-gpu/bin/python"
+}

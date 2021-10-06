@@ -1,0 +1,79 @@
+2021-10-05 04:17:04,016 INFO    MainThread:10236 [internal.py:wandb_internal():86] W&B internal server running at pid: 10236, started at: 2021-10-05 04:17:04.015907
+2021-10-05 04:17:04,021 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: run_start
+2021-10-05 04:17:04,028 INFO    WriterThread:10236 [datastore.py:open_for_write():77] open: /home/eeaiserver/viplab_projects/satellite-knowledge-distillation/wandb/offline-run-20211005_041702-1w3d18lz/run-1w3d18lz.wandb
+2021-10-05 04:17:04,044 DEBUG   HandlerThread:10236 [meta.py:__init__():40] meta init
+2021-10-05 04:17:04,045 DEBUG   HandlerThread:10236 [meta.py:__init__():54] meta init done
+2021-10-05 04:17:04,045 DEBUG   HandlerThread:10236 [meta.py:probe():211] probe
+2021-10-05 04:17:04,055 DEBUG   HandlerThread:10236 [meta.py:_setup_git():201] setup git
+2021-10-05 04:17:04,089 DEBUG   HandlerThread:10236 [meta.py:_setup_git():208] setup git done
+2021-10-05 04:17:04,089 DEBUG   HandlerThread:10236 [meta.py:_save_pip():58] save pip
+2021-10-05 04:17:04,091 DEBUG   HandlerThread:10236 [meta.py:_save_pip():72] save pip done
+2021-10-05 04:17:04,091 DEBUG   HandlerThread:10236 [meta.py:probe():249] probe done
+2021-10-05 04:17:15,881 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: pause
+2021-10-05 04:17:15,882 INFO    HandlerThread:10236 [handler.py:handle_request_pause():567] stopping system metrics thread
+2021-10-05 04:21:49,579 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: poll_exit
+2021-10-05 04:21:49,581 DEBUG   SenderThread:10236 [sender.py:send():185] send: exit
+2021-10-05 04:21:49,581 INFO    SenderThread:10236 [sender.py:send_exit():294] handling exit code: 0
+2021-10-05 04:21:49,583 INFO    SenderThread:10236 [sender.py:send_exit():296] handling runtime: 12
+2021-10-05 04:21:49,584 INFO    SenderThread:10236 [sender.py:_save_file():879] saving file wandb-summary.json with policy end
+2021-10-05 04:21:49,584 INFO    SenderThread:10236 [sender.py:send_exit():306] send defer
+2021-10-05 04:21:49,585 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: poll_exit
+2021-10-05 04:21:49,586 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,587 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 0
+2021-10-05 04:21:49,587 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,587 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 0
+2021-10-05 04:21:49,588 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 1
+2021-10-05 04:21:49,588 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,589 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 1
+2021-10-05 04:21:49,589 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,589 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 1
+2021-10-05 04:21:49,589 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 2
+2021-10-05 04:21:49,590 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,590 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 2
+2021-10-05 04:21:49,591 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,591 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 2
+2021-10-05 04:21:49,591 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 3
+2021-10-05 04:21:49,592 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,592 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 3
+2021-10-05 04:21:49,593 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,594 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 3
+2021-10-05 04:21:49,594 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 4
+2021-10-05 04:21:49,594 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,595 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 4
+2021-10-05 04:21:49,595 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,595 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 4
+2021-10-05 04:21:49,595 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 5
+2021-10-05 04:21:49,596 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,596 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 5
+2021-10-05 04:21:49,597 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,597 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 5
+2021-10-05 04:21:49,597 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 6
+2021-10-05 04:21:49,598 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,598 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 6
+2021-10-05 04:21:49,599 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,599 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 6
+2021-10-05 04:21:49,599 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 7
+2021-10-05 04:21:49,600 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,600 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 7
+2021-10-05 04:21:49,600 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,600 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 7
+2021-10-05 04:21:49,601 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 8
+2021-10-05 04:21:49,601 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,602 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 8
+2021-10-05 04:21:49,602 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,602 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 8
+2021-10-05 04:21:49,603 INFO    SenderThread:10236 [sender.py:transition_state():319] send defer: 9
+2021-10-05 04:21:49,604 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: defer
+2021-10-05 04:21:49,604 DEBUG   SenderThread:10236 [sender.py:send():185] send: final
+2021-10-05 04:21:49,604 INFO    HandlerThread:10236 [handler.py:handle_request_defer():143] handle defer: 9
+2021-10-05 04:21:49,605 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: defer
+2021-10-05 04:21:49,605 INFO    SenderThread:10236 [sender.py:send_request_defer():315] handle sender defer: 9
+2021-10-05 04:21:49,689 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: poll_exit
+2021-10-05 04:21:49,689 DEBUG   SenderThread:10236 [sender.py:send_request():199] send_request: poll_exit
+2021-10-05 04:21:49,691 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: get_summary
+2021-10-05 04:21:49,693 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: sampled_history
+2021-10-05 04:21:49,696 DEBUG   HandlerThread:10236 [handler.py:handle_request():126] handle_request: shutdown
+2021-10-05 04:21:49,696 INFO    HandlerThread:10236 [handler.py:finish():683] shutting down handler
+2021-10-05 04:21:50,604 INFO    WriterThread:10236 [datastore.py:close():281] close: /home/eeaiserver/viplab_projects/satellite-knowledge-distillation/wandb/offline-run-20211005_041702-1w3d18lz/run-1w3d18lz.wandb
+2021-10-05 04:21:50,689 INFO    SenderThread:10236 [sender.py:finish():986] shutting down sender
+2021-10-05 04:21:50,692 INFO    MainThread:10236 [internal.py:handle_exit():76] Internal process exited

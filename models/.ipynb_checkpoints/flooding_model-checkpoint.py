@@ -266,6 +266,7 @@ def unnorm_batch(x:torch.Tensor, channel_configuration:str="all", max_clip_val:f
     model_input_npy = x.cpu().numpy()
 
     mean, std = normalize.get_normalisation(channel_configuration, channels_first=True)
+    print(mean.shape)
     mean = mean[np.newaxis] # (1, nchannels, 1, 1)
     std = std[np.newaxis]  # (1, nchannels, 1, 1)
     out = model_input_npy * std + mean
