@@ -55,8 +55,8 @@ def cross_entropy_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, w
         averaged loss
 
     """
-    print('trongan93-test losses: Cross entropy loss function for mask')
-    print(logits.dim())
+#     print('trongan93-test losses: Cross entropy loss function for mask')
+#     print(logits.dim())
     assert logits.dim() == 4, f"Expected 4D tensor logits"
     assert target.dim() == 3, f"Expected 3D tensor target"
 
@@ -142,6 +142,43 @@ def calc_loss_multioutput_logistic_mask_invalid(logits: torch.Tensor, target: to
 
 
 # Optimize by Trong-An Bui (trongan93@gmail.com)
+def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Optional[torch.Tensor]=None, gamma=2) -> float:
+    """
+    F.cross_entropy loss masking invalids (it masks the 0 value in the target tensor)
+
+    Args:
+        logits: (B, C, H, W) tensor with logits (no softmax!)
+        target: (B, H, W) tensor. int values in {0,...,C} it considers 0 to be the invalid value
+        weight: (C, ) tensor. weight per class value to cross_entropy function
+
+    Returns:
+        averaged loss
+
+    """
+#     print('trongan93-test losses: Cross entropy loss function for mask')
+#     print(logits.dim())
+    assert logits.dim() == 4, f"Expected 4D tensor logits"
+    assert target.dim() == 3, f"Expected 3D tensor target"
+
+    valid = (target != 0)
+    target_without_invalids = (target - 1) * valid
+
+#     # BCE Loss (ignoring invalid values)
+#     bce = F.cross_entropy(logits, target_without_invalids,
+#                           weight=weight, reduction='none')  # (B, 1, H, W)
+
+#     bce *= valid  # mask out invalid pixels
+
+#     return torch.sum(bce / (torch.sum(valid) + 1e-6))
+
+    ce_loss = F.cross_entropy(logits, target_without_invalids,reduction='none',weight=weight)
+    ce_loss *= valid # mask out invalid pixels
+    pt = torch.exp(-ce_loss)
+    focal_loss = ((1 - pt) ** gamma * ce_loss).mean()
+    
+    
+    return torch.sum(focal_loss / (torch.sum(valid) + 1e-6))
+
 def calc_loss_mask_invalid_2(logits: torch.Tensor, target:torch.Tensor,
                            bce_weight:float=0.5, weight:Optional[torch.Tensor]=None) -> float:
     """
@@ -157,7 +194,7 @@ def calc_loss_mask_invalid_2(logits: torch.Tensor, target:torch.Tensor,
 
     """
 
-    bce = cross_entropy_loss_mask_invalid(logits, target, weight=weight)
+    bce = focal_loss_mask_invalid(logits, target, weight=weight)
 
     # Dice Loss
     # Perform spatial softmax over NxCxHxW
