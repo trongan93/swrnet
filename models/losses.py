@@ -141,7 +141,9 @@ def calc_loss_multioutput_logistic_mask_invalid(logits: torch.Tensor, target: to
     return total_loss
 
 
-# Optimize by Trong-An Bui (trongan93@gmail.com)
+# Optimize by Trong-An Bui (trongan93@gmail.com) 
+# - Change the Cross Entropy Loss to Focal Loss function
+
 def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Optional[torch.Tensor]=None, gamma=2) -> float:
     """
     F.cross_entropy loss masking invalids (it masks the 0 value in the target tensor)
@@ -174,7 +176,7 @@ def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Op
     ce_loss = F.cross_entropy(logits, target_without_invalids,reduction='none',weight=weight)
     ce_loss *= valid # mask out invalid pixels
     pt = torch.exp(-ce_loss)
-    focal_loss = ((1 - pt) ** gamma * ce_loss).mean()
+    focal_loss = ((1 - pt) ** gamma * ce_loss)
     
     
     return torch.sum(focal_loss / (torch.sum(valid) + 1e-6))
@@ -194,6 +196,36 @@ def calc_loss_mask_invalid_2(logits: torch.Tensor, target:torch.Tensor,
 
     """
 
+    bce = focal_loss_mask_invalid(logits, target, weight=weight)
+
+    # Dice Loss
+    # Perform spatial softmax over NxCxHxW
+    dice = dice_loss_mask_invalid(logits, target) # (B, C)
+
+    # Weighted sum
+    return bce * bce_weight + dice * (1 - bce_weight)
+
+# Optimize 2 by Trong-An Bui (trongan93@gmail.com) 
+# - Change the Cross Entropy Loss to Focal Loss function
+# - Different loss functions for RGB and Nir
+def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
+                           bce_weight:float=0.5, weight:Optional[torch.Tensor]=None) -> float:
+    """
+    Weighted BCE and Dice loss masking invalids:
+     bce_loss * bce_weight + dice_loss * (1-bce_weight)
+    Args:
+        logits: (B, C, H, W) tensor with logits (no softmax!)
+        target: (B, H, W) tensor. int values in {0,...,C} it considers 0 to be the invalid value
+        bce_weight: weight of the bce part
+        weight: (C, ) tensor. weight per class value to cross_entropy function
+
+    Returns:
+
+    """
+    print(f"Shape of logits: {logits.shape}")
+    logits_rgb = logits[:,0:2,:,:]
+    print(f"Shape of logits_rgb: {logits_rgb.shape}")
+    
     bce = focal_loss_mask_invalid(logits, target, weight=weight)
 
     # Dice Loss
