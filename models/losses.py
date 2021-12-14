@@ -184,8 +184,8 @@ def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Op
 def calc_loss_mask_invalid_2(logits: torch.Tensor, target:torch.Tensor,
                            bce_weight:float=0.5, weight:Optional[torch.Tensor]=None) -> float:
     """
-    Weighted BCE and Dice loss masking invalids:
-     bce_loss * bce_weight + dice_loss * (1-bce_weight)
+    Weighted Focal loss and Dice loss masking invalids:
+     focal_loss * focal_weight + dice_loss * (1-focal_weight)
     Args:
         logits: (B, C, H, W) tensor with logits (no softmax!)
         target: (B, H, W) tensor. int values in {0,...,C} it considers 0 to be the invalid value
