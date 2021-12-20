@@ -280,11 +280,11 @@ def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
     logits_rgb = logits[:,0:2,:,:]
     print(f"Shape of logits_rgb: {logits_rgb.shape}")
     
-    bce = focal_loss_mask_invalid(logits, target, weight=weight)
+    fc = focal_loss_mask_invalid(logits, target, weight=weight)
 
     # Dice Loss
     # Perform spatial softmax over NxCxHxW
-    dice = iou_loss_mask_invalid(logits, target) # (B, C)
+    iou_loss = iou_loss_mask_invalid(logits, target) # (B, C)
 
     # Weighted sum
-    return bce * bce_weight + dice * (1 - bce_weight)
+    return fc * bce_weight + iou_loss * (1 - bce_weight)

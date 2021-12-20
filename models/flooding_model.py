@@ -301,7 +301,8 @@ class WorldFloodsModel2(pl.LightningModule):
         """
         x, y = batch['image'], batch['mask'].squeeze(1)
         logits = self.network(x)
-        loss = losses.calc_loss_mask_invalid_2(logits, y, weight=self.weight_per_class.to(self.device))
+        # loss = losses.calc_loss_mask_invalid_2(logits, y, weight=self.weight_per_class.to(self.device))
+        loss = losses.calc_loss_mask_invalid_3(logits, y, weight=self.weight_per_class.to(self.device))
         if (batch_idx % 100) == 0:
             self.log("loss", loss)
         
@@ -343,10 +344,14 @@ class WorldFloodsModel2(pl.LightningModule):
         x, y = batch['image'], batch['mask'].squeeze(1)
         logits = self.network(x)
         
-        bce_loss = losses.cross_entropy_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device))
-        dice_loss = losses.dice_loss_mask_invalid(logits, y)
-        self.log('val_bce_loss', bce_loss)
-        self.log('val_dice_loss', dice_loss)
+        # bce_loss = losses.cross_entropy_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device))
+        # dice_loss = losses.dice_loss_mask_invalid(logits, y)
+        # self.log('val_bce_loss', bce_loss)
+        # self.log('val_dice_loss', dice_loss)
+        focal_loss = losses.focal_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device))
+        iou_loss = losses.iou_loss_mask_invalid(logits, y)
+        self.log('val_focal_loss', focal_loss)
+        self.log('val_iou_loss', iou_loss)
 
         pred_categorical = torch.argmax(logits, dim=1).long()
 
