@@ -276,9 +276,9 @@ def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
     Returns:
 
     """
-    print(f"Shape of logits: {logits.shape}")
+    # print(f"Shape of logits: {logits.shape}")
     logits_rgb = logits[:,0:2,:,:]
-    print(f"Shape of logits_rgb: {logits_rgb.shape}")
+    # print(f"Shape of logits_rgb: {logits_rgb.shape}")
     
     fc = focal_loss_mask_invalid(logits, target, weight=weight)
 
