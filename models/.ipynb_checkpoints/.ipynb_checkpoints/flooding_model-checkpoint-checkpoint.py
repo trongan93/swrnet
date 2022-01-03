@@ -15,7 +15,7 @@ from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONF
 
 from models.architecture import SimpleCNN
 from models.unet_optimize import UNet, UNet_dropout, SimpleUNet, FullUNet
-from models import losses, losses2, prenirchannel
+from models import losses, losses2
 from torch import nn
 
 # Using the Cross Entropy Loss only (Origianl UNET)
@@ -432,7 +432,7 @@ class WorldFloodsModel3(pl.LightningModule):
         logits = self.network(x)
         # loss = losses.calc_loss_mask_invalid_2(logits, y, weight=self.weight_per_class.to(self.device))
         # loss = losses.calc_loss_mask_invalid_3(logits, y, weight=self.weight_per_class.to(self.device))
-        loss = losses2.optimize_loss(logits, y, weight=self.weight_per_class.to(self.device))
+        loss = losses2.optimize_loss(logits, y)
         if (batch_idx % 100) == 0:
             self.log("loss", loss)
         
