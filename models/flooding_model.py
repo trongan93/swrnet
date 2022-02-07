@@ -344,11 +344,7 @@ class WorldFloodsModel2(pl.LightningModule):
         x, y = batch['image'], batch['mask'].squeeze(1)
         logits = self.network(x)
         
-        # bce_loss = losses.cross_entropy_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device))
-        # dice_loss = losses.dice_loss_mask_invalid(logits, y)
-        # self.log('val_bce_loss', bce_loss)
-        # self.log('val_dice_loss', dice_loss)
-        focal_loss = losses.focal_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device), gamma=5)
+        focal_loss = losses.focal_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device), gamma=0, alpha=0.0)
         iou_loss = losses.iou_loss_mask_invalid(logits, y)
         self.log('val_focal_loss', focal_loss)
         self.log('val_iou_loss', iou_loss)

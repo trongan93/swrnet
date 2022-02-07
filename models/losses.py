@@ -3,6 +3,7 @@ from typing import Optional
 import torch
 import torch.nn.functional as F
 from typing import Optional, List
+from torch import nn
 
 
 def dice_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, smooth=1.) -> float:
@@ -162,7 +163,7 @@ def calc_loss_multioutput_logistic_mask_invalid(logits: torch.Tensor, target: to
 # Optimize by Trong-An Bui (trongan93@gmail.com) 
 # - Change the Cross Entropy Loss to Focal Loss function
 
-def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Optional[torch.Tensor]=None, gamma=2) -> float:
+def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Optional[torch.Tensor]=None, gamma=2, alpha=.25) -> float:
     """
     F.cross_entropy loss masking invalids (it masks the 0 value in the target tensor)
 
@@ -183,19 +184,10 @@ def focal_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, weight:Op
     valid = (target != 0)
     target_without_invalids = (target - 1) * valid
 
-#     # BCE Loss (ignoring invalid values)
-#     bce = F.cross_entropy(logits, target_without_invalids,
-#                           weight=weight, reduction='none')  # (B, 1, H, W)
-
-#     bce *= valid  # mask out invalid pixels
-
-#     return torch.sum(bce / (torch.sum(valid) + 1e-6))
-
     ce_loss = F.cross_entropy(logits, target_without_invalids,reduction='none',weight=weight)
     ce_loss *= valid # mask out invalid pixels
     pt = torch.exp(-ce_loss)
-    focal_loss = ((1 - pt) ** gamma * ce_loss)
-    
+    focal_loss = (alpha*(1 - pt) ** gamma * ce_loss)
     
     return torch.sum(focal_loss / (torch.sum(valid) + 1e-6))
 
@@ -253,20 +245,18 @@ def iou_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, smooth=1.) 
     pred_valid = pred * valid.unsqueeze(1).float()  # # Set invalids to 0 (all values in prob tensor are 0
 
     intersection = (pred_valid * target_one_hot_without_invalid).sum(dim=axis_red) # (B, C) tensor
+    total = (pred_valid + target_one_hot_without_invalid).sum(dim=axis_red) # (B, C) tensor
 
-    union = pred_valid.sum(dim=axis_red) + target_one_hot_without_invalid.sum(dim=axis_red)  # (B, C) tensor
-
-    dice_score = ((2. * intersection + smooth) /
-                 (union + smooth))
-
-    loss = (1 - dice_score)  # (B, C) tensor
-
+    union = total - intersection
+    iou_score = (intersection + smooth)/(union + smooth)
+    loss = (1 - iou_score)  # (B, C) tensor
     return torch.mean(loss)
+
 def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
                            bce_weight:float=0.5, weight:Optional[torch.Tensor]=None) -> float:
     """
-    Weighted BCE and Dice loss masking invalids:
-     bce_loss * bce_weight + dice_loss * (1-bce_weight)
+    Weighted Focal loss and IoU loss masking invalids:
+     focal_loss * bce_weight + iou_loss * (1-bce_weight)
     Args:
         logits: (B, C, H, W) tensor with logits (no softmax!)
         target: (B, H, W) tensor. int values in {0,...,C} it considers 0 to be the invalid value
@@ -280,7 +270,7 @@ def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
     logits_rgb = logits[:,0:2,:,:]
     # print(f"Shape of logits_rgb: {logits_rgb.shape}")
     
-    fc = focal_loss_mask_invalid(logits, target, weight=weight, gamma=5)
+    fc = focal_loss_mask_invalid(logits, target, weight=weight, gamma=0, alpha=0.0)
 
     # Dice Loss
     # Perform spatial softmax over NxCxHxW
