@@ -129,6 +129,51 @@ class SimpleUNet(nn.Module):
 
         return out
 
+class SimpleUNet_3_over_4(nn.Module):
+    def __init__(self, n_channels, n_class):
+        super().__init__()
+
+        self.dconv_down1 = double_conv(n_channels, 48)
+        self.dconv_down2 = double_conv(48, 96)
+        self.dconv_down3 = double_conv(96, 192)
+        self.dconv_down4 = double_conv(192, 384)
+
+        self.maxpool = nn.MaxPool2d(2)
+
+        self.dconv_up3 = double_conv(192 + 384, 192)
+        self.dconv_up2 = double_conv(96 + 192, 96)
+        self.dconv_up1 = double_conv(96 + 48, 48)
+
+        self.conv_last = nn.Conv2d(48, n_class, 1)
+
+    def forward(self, x):
+        conv1 = self.dconv_down1(x)
+        x = self.maxpool(conv1)
+
+        conv2 = self.dconv_down2(x)
+        x = self.maxpool(conv2)
+
+        conv3 = self.dconv_down3(x)
+        x = self.maxpool(conv3)
+
+        x = self.dconv_down4(x)
+
+        x = nn.functional.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        x = torch.cat([x, conv3], dim=1)
+
+        x = self.dconv_up3(x)
+        x = nn.functional.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        x = torch.cat([x, conv2], dim=1)
+
+        x = self.dconv_up2(x)
+        x = nn.functional.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
+        x = torch.cat([x, conv1], dim=1)
+
+        x = self.dconv_up1(x)
+
+        out = self.conv_last(x)
+
+        return out
     
 class UNet_dropout(nn.Module):
     def __init__(self, n_channels, n_class):

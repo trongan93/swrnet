@@ -14,7 +14,7 @@ from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
 from models.architecture import SimpleCNN
-from models.unet_optimize import UNet, UNet_dropout, SimpleUNet, FullUNet
+from models.unet_optimize import UNet, UNet_dropout, SimpleUNet, FullUNet, SimpleUNet_3_over_4
 from models import losses, losses2, prenirchannel
 from torch import nn
 
@@ -689,7 +689,10 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
 
     elif architecture == 'simplecnn':
         model = SimpleCNN(num_channels, num_classes)
-
+        
+    elif architecture == 'unet_3_over_4':
+        model = SimpleUNet_3_over_4(num_channels, num_classes)
+        
     elif architecture == 'linear':
         model = SimpleLinear(num_channels, num_classes)
 
