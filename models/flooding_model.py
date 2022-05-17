@@ -14,7 +14,7 @@ from ml4floods.models.architectures.hrnet_seg import HighResolutionNet
 from ml4floods.data.worldfloods.configs import COLORS_WORLDFLOODS, CHANNELS_CONFIGURATIONS, BANDS_S2, COLORS_WORLDFLOODS_INVLANDWATER, COLORS_WORLDFLOODS_INVCLEARCLOUD
 
 from models.architecture import SimpleCNN
-from models.unet_optimize import UNet, UNet_dropout, SimpleUNet, FullUNet
+from models.unet_optimize import UNet, UNet_dropout, SimpleUNet, FullUNet, Res2_UNET, Res2_AttUNET, AttUNET
 from models import losses, losses2, prenirchannel
 from torch import nn
 
@@ -645,6 +645,134 @@ class WorldFloodsModel3(pl.LightningModule):
             3: "cloud"
         }
     
+    
+#####    
+class WorldFloodsModel4(pl.LightningModule):
+    """
+    Model to do multiclass classification.
+    It expects ground truths y (B, H, W) tensors to be encoded as: {0: invalid, 1: clear, 2:water, 3: cloud}
+    The preds (model.forward(x)) will produce a tensor with shape (B, 3, H, W)
+    """
+    def __init__(self, model_params: dict):
+        super().__init__()
+        self.save_hyperparameters()
+        h_params_dict = model_params.get('hyperparameters', {})
+        self.num_class = h_params_dict.get('num_classes', 3)
+        self.network = configure_architecture(h_params_dict)
+        self.weight_per_class = torch.Tensor(h_params_dict.get('weight_per_class',
+                                                               [1 for i in range(self.num_class)]),
+                                             device=self.device)
+
+        # learning rate params
+        self.lr = h_params_dict.get('lr', 1e-4)
+        self.lr_decay = h_params_dict.get('lr_decay', 0.5)
+        self.lr_patience = h_params_dict.get('lr_patience', 2)
+        
+        #label names setup
+        self.label_names = h_params_dict.get('label_names', [i for i in range(self.num_class)])
+
+    def training_step(self, batch: Dict, batch_idx) -> float:
+        """
+        Args:
+            batch: includes
+                x (torch.Tensor): (B,  C, W, H), input image
+                y (torch.Tensor): (B, W, H) encoded as {0: invalid, 1: land, 2: water, 3: cloud}
+        """
+        x, y = batch['image'], batch['mask'].squeeze(1)
+        logits = self.network(x)
+        loss, ssim = losses.calc_loss_mask_invalid_4(logits, y, weight=self.weight_per_class.to(self.device))
+        if (batch_idx % 100) == 0:
+            self.log("loss", loss)
+            self.log("ssim", ssim)
+        if batch_idx == 0 and self.logger is not None:
+            self.log_images(x, y, logits,prefix="train_")
+            
+        return loss
+    
+    def forward(self, x:torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x: (B, num_channels, H, W) input tensor
+        Returns:
+            (B, 3, H, W) prediction of the network
+        """
+        return self.network(x)
+
+    def log_images(self, x, y, logits,prefix=""):
+        import wandb
+        mask_data = y.cpu().numpy()
+        pred_data = torch.argmax(logits, dim=1).long().cpu().numpy()
+        img_data = batch_to_unnorm_rgb(x,
+                                       self.hparams["model_params"]["hyperparameters"]['channel_configuration'])
+
+        self.logger.experiment.log(
+            {f"{prefix}overlay": [self.wb_mask(img, pred, mask) for (img, pred, mask) in zip(img_data, pred_data, mask_data)]})
+
+        self.logger.experiment.log({f"{prefix}image": [wandb.Image(img) for img in img_data]})
+        self.logger.experiment.log({f"{prefix}y": [wandb.Image(mask_to_rgb(img)) for img in mask_data]})
+        self.logger.experiment.log({f"{prefix}pred": [wandb.Image(mask_to_rgb(img + 1)) for img in pred_data]})
+
+    def validation_step(self, batch: Dict, batch_idx):
+        """
+        Args:
+            batch: includes
+                x (torch.Tensor): (B, C, W, H), input image
+                y (torch.Tensor): (B, W, H) encoded as {0: invalid, 1: land, 2: water, 3: cloud}
+        """
+        x, y = batch['image'], batch['mask'].squeeze(1)
+        logits = self.network(x)
+        
+        focal_loss = losses.focal_loss_mask_invalid(logits, y, weight=self.weight_per_class.to(self.device), gamma=5, alpha=0.01)
+        iou_loss = losses.iou_loss_mask_invalid(logits, y)
+        ssim_loss = losses.ssim(logits, y)
+        self.log('val_focal_loss', focal_loss)
+        self.log('val_iou_loss', iou_loss)
+        self.log('val_ssim_loss', ssim_loss)
+
+        pred_categorical = torch.argmax(logits, dim=1).long()
+
+        # cm_batch is (B, num_class, num_class)
+        cm_batch = metrics.compute_confusions(y, pred_categorical, num_class=self.num_class,
+                                              remove_class_zero=True)
+
+        # Log accuracy per class
+        recall = metrics.calculate_recall(cm_batch, self.label_names)
+        for k in recall.keys():
+            self.log(f"val_recall {k}", recall[k])
+
+        # Log IoU per class
+        iou_dict = metrics.calculate_iou(cm_batch, self.label_names)
+        for k in iou_dict.keys():
+            self.log(f"val_iou {k}", iou_dict[k])
+            
+        if batch_idx == 0 and self.logger is not None:
+            self.log_images(x, y, logits,prefix="val_")
+            
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.network.parameters(), self.lr)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min',
+                                                               factor=self.lr_decay, verbose=True,
+                                                               patience=self.lr_patience)
+
+        return {"optimizer": optimizer, "lr_scheduler": scheduler,
+                "monitor": self.hparams["model_params"]["hyperparameters"]["metric_monitor"]}
+
+    def wb_mask(self, bg_img, pred_mask, true_mask):
+        import wandb
+        return wandb.Image(bg_img, masks={
+            "prediction" : {"mask_data" : pred_mask, "class_labels" : self.labels()},
+            "ground truth" : {"mask_data" : true_mask, "class_labels" : self.labels()}})
+        
+    def labels(self):
+        return {
+            0: "invalid",
+            1: "land",
+            2: "water",
+            3: "cloud"
+        }
+    
+    
 class DistilledTrainingModel(WorldFloodsModel):
     def __init__(self, teacher_model_params: dict, student_model_params: dict):
         super().__init__(model_params=student_model_params)
@@ -698,6 +826,18 @@ def configure_architecture(h_params:AttrDict) -> torch.nn.Module:
 
     elif architecture == "hrnet_small":
         model = HighResolutionNet(input_channels=num_channels, output_channels=num_classes)
+        
+    elif architecture == "res2_unet":
+        model = Res2_UNET(num_channels, num_classes)
+        
+    elif architecture == "res2_attunet":
+        model = Res2_AttUNET(num_channels, num_classes)    
+        
+    elif architecture == "res2_simunet":
+        model = Res2_SimpleUNet(num_channels, num_classes)
+        
+    elif architecture == "attunet":
+        model = AttUNET(num_channels, num_classes)
         if num_channels == 3:
             print("3-channel model. Loading pre-trained weights from ImageNet")
             # TODO models are bgr instead of rgb!
