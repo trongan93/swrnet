@@ -254,7 +254,7 @@ def iou_loss_mask_invalid(logits: torch.Tensor, target:torch.Tensor, smooth=1.) 
     return torch.mean(loss)
 
 def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
-                           bce_weight:float=0.5, weight:Optional[torch.Tensor]=None) -> float:
+                           bce_weight:float=0.8, weight:Optional[torch.Tensor]=None) -> float:
     """
     Weighted Focal loss and IoU loss masking invalids:
      focal_loss * bce_weight + iou_loss * (1-bce_weight)
@@ -272,10 +272,39 @@ def calc_loss_mask_invalid_3(logits: torch.Tensor, target:torch.Tensor,
     # print(f"Shape of logits_rgb: {logits_rgb.shape}")
     
     fc = focal_loss_mask_invalid(logits, target, weight=weight, gamma=5, alpha=0.001)
-
+    
     # Dice Loss
     # Perform spatial softmax over NxCxHxW
     iou_loss = iou_loss_mask_invalid(logits, target) # (B, C)
-
+    
+    compound_loss = fc * bce_weight + iou_loss * (1 - bce_weight)
     # Weighted sum
-    return fc * bce_weight + iou_loss * (1 - bce_weight)
+    return fc, iou_loss, compound_loss
+
+def calc_loss_mask_invalid_4(logits: torch.Tensor, target:torch.Tensor,
+                           previous_loss_fc=0.5, previous_loss_iou=0.5, weight:Optional[torch.Tensor]=None) -> float:
+    """
+    Weighted Focal loss and IoU loss masking invalids:
+     focal_loss * bce_weight + iou_loss * (1-bce_weight)
+    Args:
+        logits: (B, C, H, W) tensor with logits (no softmax!)
+        target: (B, H, W) tensor. int values in {0,...,C} it considers 0 to be the invalid value
+        bce_weight: weight of the bce part
+        weight: (C, ) tensor. weight per class value to cross_entropy function
+
+    Returns:
+
+    """
+    # print(f"Shape of logits: {logits.shape}")
+    logits_rgb = logits[:,0:2,:,:]
+    # print(f"Shape of logits_rgb: {logits_rgb.shape}")
+    
+    fc = focal_loss_mask_invalid(logits, target, weight=weight, gamma=5, alpha=0.001)
+    
+    # Dice Loss
+    # Perform spatial softmax over NxCxHxW
+    iou_loss = iou_loss_mask_invalid(logits, target) # (B, C)
+    
+    compound_loss = fc * (1/previous_loss_iou) + iou_loss * (1/previous_loss_fc)
+    # Weighted sum
+    return fc, iou_loss, compound_loss

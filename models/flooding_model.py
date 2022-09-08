@@ -414,6 +414,8 @@ class WorldFloodsModel2(pl.LightningModule):
         
         #label names setup
         self.label_names = h_params_dict.get('label_names', [i for i in range(self.num_class)])
+        self._fc_val = 0.5
+        self._iou_lss_val = 0.5
 
     def training_step(self, batch: Dict, batch_idx) -> float:
         """
@@ -425,14 +427,30 @@ class WorldFloodsModel2(pl.LightningModule):
         x, y = batch['image'], batch['mask'].squeeze(1)
         logits = self.network(x)
         # loss = losses.calc_loss_mask_invalid_2(logits, y, weight=self.weight_per_class.to(self.device))
-        loss = losses.calc_loss_mask_invalid_3(logits, y, weight=self.weight_per_class.to(self.device))
+        # fc, iou_loss, compound_loss = losses.calc_loss_mask_invalid_3(logits, y, weight=self.weight_per_class.to(self.device))
+        fc_val = self._fc_val
+        iou_lss_val = self._iou_lss_val
+        print('fc val: ', fc_val)
+        print('iou val: ', iou_lss_val)
+        fc, iou_loss, compound_loss = losses.calc_loss_mask_invalid_4(logits, y, previous_loss_fc=fc_val, previous_loss_iou=iou_lss_val, weight=self.weight_per_class.to(self.device))
+        
+        self._fc_val = fc.detach().item()
+        self._iou_lss_val = iou_loss.detach().item()
+        
+        self.log("train_fc_loss", iou_loss)
+        self.log("train_iou_loss", fc)
+        self.log("train_compound_loss", compound_loss)
+        
+        
         if (batch_idx % 100) == 0:
-            self.log("loss", loss)
+            self.log("train_fc_loss", iou_loss)
+            self.log("train_iou_loss", fc)
+            self.log("train_compound_loss", compound_loss)
         
         if batch_idx == 0 and self.logger is not None:
             self.log_images(x, y, logits,prefix="train_")
             
-        return loss
+        return compound_loss
     
     def forward(self, x:torch.Tensor) -> torch.Tensor:
         """
