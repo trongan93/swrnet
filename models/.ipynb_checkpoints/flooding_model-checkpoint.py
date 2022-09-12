@@ -430,8 +430,8 @@ class WorldFloodsModel2(pl.LightningModule):
         # fc, iou_loss, compound_loss = losses.calc_loss_mask_invalid_3(logits, y, weight=self.weight_per_class.to(self.device))
         fc_val = self._fc_val
         iou_lss_val = self._iou_lss_val
-        print('fc val: ', fc_val)
-        print('iou val: ', iou_lss_val)
+        # print('fc val: ', fc_val)
+        # print('iou val: ', iou_lss_val)
         fc, iou_loss, compound_loss = losses.calc_loss_mask_invalid_4(logits, y, previous_loss_fc=fc_val, previous_loss_iou=iou_lss_val, weight=self.weight_per_class.to(self.device))
         
         self._fc_val = fc.detach().item()

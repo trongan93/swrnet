@@ -305,6 +305,7 @@ def calc_loss_mask_invalid_4(logits: torch.Tensor, target:torch.Tensor,
     # Perform spatial softmax over NxCxHxW
     iou_loss = iou_loss_mask_invalid(logits, target) # (B, C)
     
-    compound_loss = fc * (1/previous_loss_iou) + iou_loss * (1/previous_loss_fc)
+    # compound_loss = fc * (1/(2*previous_loss_fc)) + iou_loss * (1/(2*previous_loss_iou))
+    compound_loss = fc * (1/(previous_loss_fc)) + iou_loss * (1/(previous_loss_iou))
     # Weighted sum
     return fc, iou_loss, compound_loss
