@@ -306,6 +306,14 @@ def calc_loss_mask_invalid_4(logits: torch.Tensor, target:torch.Tensor,
     iou_loss = iou_loss_mask_invalid(logits, target) # (B, C)
     
     # compound_loss = fc * (1/(2*previous_loss_fc)) + iou_loss * (1/(2*previous_loss_iou))
-    compound_loss = fc * (1/(previous_loss_fc)) + iou_loss * (1/(previous_loss_iou))
+    # compound_loss = fc * (1/(previous_loss_fc*previous_loss_fc)) + iou_loss * (1/(previous_loss_iou*previous_loss_iou))
+    # compound_loss = fc * ((previous_loss_iou)/previous_loss_fc+previous_loss_iou) + iou_loss * ((previous_loss_fc)/previous_loss_iou+previous_loss_fc)
+    # compound_loss = ((previous_loss_iou)/(previous_loss_fc+previous_loss_iou)) * fc +  ((previous_loss_fc)/(previous_loss_iou+previous_loss_fc)) * iou_loss
+    
+    # compound_loss = (1/(previous_loss_fc)*fc+1/(previous_loss_iou)*iou_loss)/(1/(previous_loss_fc*previous_loss_iou)) //worked ok, not finish test.
+    # compound_loss = ((1/previous_loss_fc)*fc+(1/previous_loss_iou)*iou_loss)/(1/(previous_loss_fc*previous_loss_iou)) # Need to test on this case
+    # compound_loss = (1-(1/previous_loss_iou))*fc+(1/previous_loss_iou)*iou_loss
+    compound_loss = fc * (1/(previous_loss_fc**5)) + iou_loss * (1/(previous_loss_iou**5))
+    
     # Weighted sum
     return fc, iou_loss, compound_loss
