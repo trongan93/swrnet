@@ -310,10 +310,13 @@ def calc_loss_mask_invalid_4(logits: torch.Tensor, target:torch.Tensor,
     # compound_loss = fc * ((previous_loss_iou)/previous_loss_fc+previous_loss_iou) + iou_loss * ((previous_loss_fc)/previous_loss_iou+previous_loss_fc)
     # compound_loss = ((previous_loss_iou)/(previous_loss_fc+previous_loss_iou)) * fc +  ((previous_loss_fc)/(previous_loss_iou+previous_loss_fc)) * iou_loss
     
-    # compound_loss = (1/(previous_loss_fc)*fc+1/(previous_loss_iou)*iou_loss)/(1/(previous_loss_fc*previous_loss_iou)) //worked ok, not finish test.
-    # compound_loss = ((1/previous_loss_fc)*fc+(1/previous_loss_iou)*iou_loss)/(1/(previous_loss_fc*previous_loss_iou)) # Need to test on this case
-    # compound_loss = (1-(1/previous_loss_iou))*fc+(1/previous_loss_iou)*iou_loss
-    compound_loss = fc * (1/(previous_loss_fc**5)) + iou_loss * (1/(previous_loss_iou**5))
+    # compound_loss = fc * (1/(previous_loss_fc**2)) + iou_loss * (1/(previous_loss_iou**2)) #DONE TEST - Folder CompoundAdaptive1
+    # compound_loss = ((1/previous_loss_fc)*fc+(1/previous_loss_iou)*iou_loss)/(1/(previous_loss_fc*previous_loss_iou)) #DONE TEST - Folder CompoundAdaptive2
+    # compound_loss = (1/previous_loss_fc) * fc + (1/previous_loss_iou) * iou_loss #DONE TEST - Folder CompoundAdaptive3
+    # compound_loss = fc * (1/(previous_loss_fc**3)) + iou_loss * (1/(previous_loss_iou**3)) #DONE TEST - Folder CompoundAdaptive4
+    
+    compound_loss = fc * (1/(previous_loss_fc**2)) + iou_loss * (1/(previous_loss_iou**2)) # test reduce kernel
+    
     
     # Weighted sum
     return fc, iou_loss, compound_loss
