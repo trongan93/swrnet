@@ -39,7 +39,7 @@ config.data_params.bucket_id = ""
 config.model_params
 
 
-config.data_params.batch_size = 96 # control this depending on the space on your GPU!
+config.data_params.batch_size = 128 # control this depending on the space on your GPU!
 config.data_params.loader_type = 'local'
 config.data_params.path_to_splits = "/mnt/d/Flooding/worldfloods_v1_0" # local folder to download the data
 config.data_params.train_test_split_file = "/mnt/d/Flooding/train_test_split_local.json"
@@ -197,7 +197,11 @@ mets = metrics.compute_metrics(
     plot=False, convert_targets=False)
 
 label_names = ["land", "water", "cloud"]
-metrics.plot_metrics(mets, label_names)
+# metrics.plot_metrics(mets, label_names)
+metrics_df = pd.DataFrame(mets)
+output_file = "metrics_results.csv"
+metrics_df.to_csv(output_file, index=False)
+print(f"Metrics have been saved to {output_file}")
 
 
 if hasattr(dl.dataset, "image_files"):
@@ -216,6 +220,9 @@ join_data_per_code = join_data_per_code.set_index("code")
 join_data_per_code = join_data_per_code*100
 print(f"Mean values across flood events: {join_data_per_code.mean(axis=0).to_dict()}")
 join_data_per_code
+output_file = "flood_event_metrics.csv"
+join_data_per_code.to_csv(output_file)
+print(f"Metrics per flood event have been saved to {output_file}")
 
 
 
@@ -236,16 +243,46 @@ prediction = torch.argmax(probs, dim=1).long().cpu()
 print(f"Shape of prediction: {prediction.shape}")
 
 
-n_image_start=7
-n_images=14
-count=int(n_images-n_image_start)
-fig, axs = plt.subplots(4, count, figsize=(18,14),tight_layout=True)
-importlib.reload(flooding_model)    
-flooding_model.plot_batch(batch_val["image"][n_image_start:n_images],channel_configuration="bgri",axs=axs[0],max_clip_val=3500.)
-flooding_model.plot_batch(batch_val["image"][n_image_start:n_images],channel_configuration="bgri",bands_show=["B8","B8", "B8"],axs=axs[1],max_clip_val=3500.)
-# flooding_model.plot_batch(batch_val["image"][:n_images],bands_show=["B11","B8", "B4"],axs=axs[1],max_clip_val=4500.)
-flooding_model.plot_batch_output_v1(batch_val["mask"][n_image_start:n_images, 0],axs=axs[2], show_axis=True)
-flooding_model.plot_batch_output_v1(prediction[n_image_start:n_images] + 1,axs=axs[3], show_axis=True)
+# import matplotlib.pyplot as plt
+# import importlib
+
+n_image_start = 7
+n_images = 14
+count = int(n_images - n_image_start)
+
+fig, axs = plt.subplots(4, count, figsize=(18, 14), tight_layout=True)
+
+importlib.reload(flooding_model)
+
+flooding_model.plot_batch(
+    batch_val["image"][n_image_start:n_images],
+    channel_configuration="bgri",
+    axs=axs[0],
+    max_clip_val=3500.
+)
+flooding_model.plot_batch(
+    batch_val["image"][n_image_start:n_images],
+    channel_configuration="bgri",
+    bands_show=["B8", "B8", "B8"],
+    axs=axs[1],
+    max_clip_val=3500.
+)
+flooding_model.plot_batch_output_v1(
+    batch_val["mask"][n_image_start:n_images, 0],
+    axs=axs[2],
+    show_axis=True
+)
+flooding_model.plot_batch_output_v1(
+    prediction[n_image_start:n_images] + 1,
+    axs=axs[3],
+    show_axis=True
+)
 
 for ax in axs.ravel():
     ax.grid(False)
+
+output_file = "batch_visualization.png"
+plt.savefig(output_file, dpi=300)
+print(f"Visualization has been saved to {output_file}")
+
+plt.close(fig)
