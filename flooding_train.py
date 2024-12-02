@@ -145,7 +145,7 @@ print(f"The trained model will be stored in {config.model_params.model_folder}/{
 
 config.gpus = 2 # which gpu to use 
 # config.gpus = None # to not use GPU
-config.model_params.hyperparameters.max_epochs = 5 # train for maximum 4 epochs
+config.model_params.hyperparameters.max_epochs = 100 # train for maximum 4 epochs
 
 trainer = Trainer(
     fast_dev_run=False,
@@ -179,50 +179,52 @@ config.model_params.max_tile_size = config.model_params.hyperparameters.max_tile
 config
 
 # model.to("cuda")
-inference_function = get_model_inference_function(model, config, apply_normalization=False, activation="softmax")
+# inference_function = get_model_inference_function(model, config, apply_normalization=False, activation="softmax")
 
-# dataset2 = get_dataset(config.data_params)
-dl = dataset.val_dataloader() # pytorch Dataloader
-print(str(dl.batch_size))
+# # dataset2 = get_dataset(config.data_params)
+# dl = dataset.val_dataloader() # pytorch Dataloader
+# print(str(dl.batch_size))
 
-# Otherwise fails when reading test dataset from remote bucket
-# torch.set_num_threads(1)
+# # Otherwise fails when reading test dataset from remote bucket
+# # torch.set_num_threads(1)
+# thresholds_water = [0, 1e-3, 1e-2] + np.arange(0.5, 0.96, 0.05).tolist() + [0.99, 0.995, 0.999]
 
-thresholds_water = [0,1e-3,1e-2]+np.arange(0.5,.96,.05).tolist() + [.99,.995,.999]
+# mets = metrics.compute_metrics(
+#     dl,
+#     inference_function, 
+#     thresholds_water=thresholds_water, 
+#     plot=False,  # Không vẽ đồ thị
+#     convert_targets=False
+# )
+# label_names = ["land", "water", "cloud"]
 
-mets = metrics.compute_metrics(
-    dl,
-    inference_function, 
-    thresholds_water=thresholds_water, 
-    plot=False, convert_targets=False)
+# metrics_df = pd.DataFrame(mets)
+# output_file = "metrics_results.csv"
+# metrics_df.to_csv(output_file, index=False)
 
-label_names = ["land", "water", "cloud"]
-# metrics.plot_metrics(mets, label_names)
-metrics_df = pd.DataFrame(mets)
-output_file = "metrics_results.csv"
-metrics_df.to_csv(output_file, index=False)
-print(f"Metrics have been saved to {output_file}")
+# print(f"Metrics have been computed and saved to {output_file}")
 
 
-if hasattr(dl.dataset, "image_files"):
-    cems_code = [os.path.basename(f).split("_")[0] for f in dl.dataset.image_files]
-else:
-    cems_code = [os.path.basename(f.file_name).split("_")[0] for f in dl.dataset.list_of_windows]
 
-iou_per_code = pd.DataFrame(metrics.group_confusion(mets["confusions"],cems_code, metrics.calculate_iou,
-                                                    label_names=[f"IoU_{l}"for l in ["land", "water", "cloud"]]))
+# if hasattr(dl.dataset, "image_files"):
+#     cems_code = [os.path.basename(f).split("_")[0] for f in dl.dataset.image_files]
+# else:
+#     cems_code = [os.path.basename(f.file_name).split("_")[0] for f in dl.dataset.list_of_windows]
 
-recall_per_code = pd.DataFrame(metrics.group_confusion(mets["confusions"],cems_code, metrics.calculate_recall,
-                                                       label_names=[f"Recall_{l}"for l in ["land", "water", "cloud"]]))
+# iou_per_code = pd.DataFrame(metrics.group_confusion(mets["confusions"],cems_code, metrics.calculate_iou,
+#                                                     label_names=[f"IoU_{l}"for l in ["land", "water", "cloud"]]))
 
-join_data_per_code = pd.merge(recall_per_code,iou_per_code,on="code")
-join_data_per_code = join_data_per_code.set_index("code")
-join_data_per_code = join_data_per_code*100
-print(f"Mean values across flood events: {join_data_per_code.mean(axis=0).to_dict()}")
-join_data_per_code
-output_file = "flood_event_metrics.csv"
-join_data_per_code.to_csv(output_file)
-print(f"Metrics per flood event have been saved to {output_file}")
+# recall_per_code = pd.DataFrame(metrics.group_confusion(mets["confusions"],cems_code, metrics.calculate_recall,
+#                                                        label_names=[f"Recall_{l}"for l in ["land", "water", "cloud"]]))
+
+# join_data_per_code = pd.merge(recall_per_code,iou_per_code,on="code")
+# join_data_per_code = join_data_per_code.set_index("code")
+# join_data_per_code = join_data_per_code*100
+# print(f"Mean values across flood events: {join_data_per_code.mean(axis=0).to_dict()}")
+# join_data_per_code
+# output_file = "flood_event_metrics.csv"
+# join_data_per_code.to_csv(output_file)
+# print(f"Metrics per flood event have been saved to {output_file}")
 
 
 
@@ -281,7 +283,7 @@ flooding_model.plot_batch_output_v1(
 for ax in axs.ravel():
     ax.grid(False)
 
-output_file = "batch_visualization.png"
+output_file = "batch_visualization(1).png"
 plt.savefig(output_file, dpi=300)
 print(f"Visualization has been saved to {output_file}")
 
