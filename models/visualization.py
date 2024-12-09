@@ -60,6 +60,52 @@ def download_tiff(local_folder: str, tiff_input: str, folder_ground_truth: str,
 
     return return_folder
 
+def get_image_transform(array_or_file:Union[str, np.ndarray],
+                        transform:Optional[rasterio.Affine]=None,
+                        bands:List[int]=None,
+                        window:Optional[rasterio.windows.Window]=None,
+                        size_read:Optional[int]=None) -> Tuple[np.ndarray, rasterio.Affine]:
+    """
+    Reads certain bands and window from `array_or_file`. If `array_or_file` is a file with `size_read` we can read
+    from the pyramids of the data to speed up plotting.
+
+    Args:
+        array_or_file: array or file to read the data.
+        transform: if `array_or_file` is a `np.array`, this current affine transform of it.
+        bands: 0-based bands to read.
+        window: `rasterio.windows.Window` to read
+        size_read: if `array_or_file` is a string, this will be the max size of height and width. It is used to read
+        from the pyramids  of the file.
+
+    Returns:
+        (C, H, W) array and affine transformation
+
+    """
+
+    if bands is not None:
+        bands_rasterio = [b+1 for b in bands]
+    else:
+        bands_rasterio = None
+
+    if isinstance(array_or_file, str):
+        return _read_data(array_or_file, bands_rasterio, window=window, size_read=size_read)
+
+    if hasattr(array_or_file, "cpu"):
+        array_or_file = array_or_file.cpu()
+
+    array_or_file = np.array(array_or_file)
+    if window is None:
+        window_slices = (slice(None), slice(None), slice(None))
+    else:
+        window_slices = (slice(None),) + window.toslices()
+
+    output = array_or_file[bands, ...]
+    output = output[window_slices]
+    if transform is not None:
+        transform = transform if window is None else rasterio.windows.transform(window, transform)
+
+    return output, transform
+
 def plot_s2_rbg_image(input: Union[str, np.ndarray], transform:Optional[rasterio.Affine]=None,
                       window:Optional[rasterio.windows.Window]=None,
                       max_clip_val:Optional[float]=3000.,
